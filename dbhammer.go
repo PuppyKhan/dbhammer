@@ -14,20 +14,23 @@ import (
 /*
 Test server environment:
 export MYSQL_TEST_USER=root
-export MYSQL_TEST_PASS=root
+export MYSQL_TEST_PASS=mysql
 export MYSQL_TEST_DBNAME=gotest
 export MYSQL_TEST_PROT=tcp
 export MYSQL_TEST_ADDR=localhost
 export MYSQL_TEST_CONCURRENT=1
 export MYSQL_TEST_PORT=3306
-
-export GOPATH="${HOME}"/golang
-export PATH="${PATH}":"${GOPATH}"/bin
 */
 
 func main() {
-
+	Names := []string{
+		`Bob`,
+		`Cathy`,
+	}
 	TraceLog := log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
+	TraceLog.Println("Initializing")
+
+	// shamelessly borrowed from https://github.com/go-sql-driver/mysql/blob/master/driver_test.go
 	env := func(key, defaultValue string) string {
 		if value := os.Getenv(key); value != "" {
 			return value
@@ -36,10 +39,10 @@ func main() {
 	}
 
 	MYSQL_TEST_USER := env("MYSQL_TEST_USER", "root")
-	MYSQL_TEST_PASS := env("MYSQL_TEST_PASS", "")
+	MYSQL_TEST_PASS := env("MYSQL_TEST_PASS", "mysql")
 	MYSQL_TEST_PROT := env("MYSQL_TEST_PROT", "tcp")
 	MYSQL_TEST_ADDR := env("MYSQL_TEST_ADDR", "localhost")
-	MYSQL_TEST_PORT := env("MYSQL_TEST_PORT", "3306")
+	MYSQL_TEST_PORT := env("MYSQL_TEST_PORT", "3306") // default
 	MYSQL_TEST_DBNAME := env("MYSQL_TEST_DBNAME", "gotest")
 	// MYSQL_TEST_CONCURRENT:=env("MYSQL_TEST_CONCURRENT")
 
@@ -53,14 +56,39 @@ func main() {
 	}
 
 	db.SetMaxIdleConns(256)
-	TraceLog.Println("pinging ... ")
+	TraceLog.Println("Pinging ... ")
 
 	err = db.Ping()
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
-	db.Close()
+	stmt, err := db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY);")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
 
-	TraceLog.Println("test done")
+	result, err := stmt.Exec()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	stmt, err := db.Prepare("INSERT INTO people (name) VALUES (?);")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	for _, name := range Names {
+		result, err := stmt.Exec(name)
+		if err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+	}
+
+	err = db.Close()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	TraceLog.Println("Test done")
 }
