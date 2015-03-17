@@ -68,18 +68,18 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
-	result, err := stmt.Exec()
+	_, err = stmt.Exec()
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
-	stmt, err := db.Prepare("INSERT INTO people (name) VALUES (?);")
+	stmt, err = db.Prepare("INSERT INTO people (name) VALUES (?);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
 	for _, name := range Names {
-		result, err := stmt.Exec(name)
+		_, err = stmt.Exec(name)
 		if err != nil {
 			TraceLog.Fatal(err.Error())
 		}
