@@ -169,6 +169,10 @@ func main() {
 			}
 			TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
 		}
+		err = rows.Err()
+		if err != nil {
+			TraceLog.Fatal(err.Error())
+		}
 	}
 	err = stmt.Close()
 	if err != nil {
