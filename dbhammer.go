@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"sync"
 
 	_ "github.com/PuppyKhan/mysql"
 )
@@ -27,23 +28,33 @@ export MYSQL_TEST_PORT=3306
 
 var (
 	NumTries int = 100
-	err      error
+	TraceLog *log.Logger
+	Tags     []string = []string{"tag #1", "tag #2", "tag #3"}
 )
 
+func InsertRow(stmt *sql.Stmt, i int, wg *sync.WaitGroup) {
+	var err error
+	// just want a simple random string here, this onion has me crying...
+	someText := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(rand.Int()))))
+	someTag := Tags[i%len(Tags)]
+	TraceLog.Printf("Inserting %s, %s\n", someText, someTag)
+	_, err = stmt.Exec(someText, someTag)
+	if err != nil {
+		TraceLog.Println(err.Error())
+	}
+	wg.Done()
+}
+
 func main() {
+	var err error
 	if len(os.Args) > 1 {
 		NumTries, err = strconv.Atoi(os.Args[1])
 		if err != nil {
 			panic(err.Error())
 		}
 	}
-	Tags := []string{
-		"tag #1",
-		"tag #2",
-		"tag #3",
-	}
 	rand.Seed(int64(NumTries))
-	TraceLog := log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
+	TraceLog = log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
 	TraceLog.Println("Initializing")
 
 	// shamelessly borrowed from https://github.com/go-sql-driver/mysql/blob/master/driver_test.go
@@ -101,21 +112,17 @@ func main() {
 	}
 
 	TraceLog.Println("Populating table")
+	var wg sync.WaitGroup
 	stmt, err = db.Prepare("INSERT INTO people (name, tag) VALUES (?,?);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
 	for i := 0; i < NumTries; i++ {
-		// just want a simple random string here, this onion has me crying...
-		someText := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(rand.Int()))))
-		someTag := Tags[i%len(Tags)]
-		TraceLog.Printf("Inserting %s, %s\n", someText, someTag)
-		_, err = stmt.Exec(someText, someTag)
-		if err != nil {
-			TraceLog.Println(err.Error())
-		}
+		wg.Add(1)
+		go InsertRow(stmt, i, &wg)
 	}
+	wg.Wait()
 
 	TraceLog.Println("Reading table by tag")
 	stmt, err = db.Prepare("SELECT name, tag FROM people WHERE tag = ? LIMIT ?;")
