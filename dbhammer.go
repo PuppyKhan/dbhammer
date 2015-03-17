@@ -37,6 +37,11 @@ func main() {
 			panic(err.Error())
 		}
 	}
+	Tags := []string{
+		"tag #1",
+		"tag #2",
+		"tag #3",
+	}
 	rand.Seed(int64(NumTries))
 	TraceLog := log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
 	TraceLog.Println("Initializing")
@@ -74,8 +79,13 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
-	TraceLog.Println("Initializing table")
-	stmt, err := db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY);")
+	TraceLog.Println("Initializing tables")
+	stmt, err := db.Prepare("CREATE TABLE tagging (tag VARCHAR(50) PRIMARY KEY);")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	stmt, err = db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY, tag VARCHAR(50) FOREIGN KEY REFERENCES tagging(tag));")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -86,7 +96,7 @@ func main() {
 	}
 
 	TraceLog.Println("Populating table")
-	stmt, err = db.Prepare("INSERT INTO people (name) VALUES (?);")
+	stmt, err = db.Prepare("INSERT INTO people (name, tag) VALUES (?,?);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -94,15 +104,52 @@ func main() {
 	for i := 0; i < NumTries; i++ {
 		// just want a simple random string here, this onion has me crying...
 		someText := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(rand.Int()))))
-		TraceLog.Printf("Inserting %s\n", someText)
-		_, err = stmt.Exec(someText)
+		someTag := Tags[i%len(Tags)]
+		TraceLog.Printf("Inserting %s, %s\n", someText, someTag)
+		_, err = stmt.Exec(someText, someTag)
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
 	}
 
-	TraceLog.Println("Dropping table")
+	TraceLog.Println("Reading table by tag")
+	stmt, err = db.Prepare("SELECT name, tag FROM people WHERE tag = ? LIMIT ?;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	var query_name sql.NullString
+	var query_tag sql.NullString
+	for i := 0; i < len(Tags); i++ {
+		someTag := Tags[i]
+		TraceLog.Printf("Reading %s...\n", Tags[i])
+		rows, err := stmt.Query(someTag, NumTries)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		defer func() {
+			err = rows.Close()
+			if err != nil {
+				TraceLog.Fatal(err.Error())
+			}
+		}()
+
+		for rows.Next() {
+			err = rows.Scan(&query_name, &query_tag)
+			if err != nil {
+				TraceLog.Println(err.Error())
+			}
+			TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
+		}
+	}
+
+	TraceLog.Println("Dropping tables")
 	stmt, err = db.Prepare("DROP TABLE people;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	stmt, err = db.Prepare("DROP TABLE tagging;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
