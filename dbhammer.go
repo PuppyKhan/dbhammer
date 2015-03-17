@@ -85,7 +85,12 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
-	stmt, err = db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY, tag VARCHAR(50) FOREIGN KEY REFERENCES tagging(tag));")
+	_, err = stmt.Exec()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	stmt, err = db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY, tag VARCHAR(50) NOT NULL, FOREIGN KEY (tag) REFERENCES tagging(tag));")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
