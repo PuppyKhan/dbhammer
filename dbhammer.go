@@ -92,7 +92,8 @@ func main() {
 	}
 
 	for i := 0; i < NumTries; i++ {
-		someText := md5.Sum([]byte(strconv.Itoa(rand.Int())))
+		// just want a simple random string here, this onion has me crying...
+		someText := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(rand.Int()))))
 		TraceLog.Printf("Inserting %s\n", someText)
 		_, err = stmt.Exec(someText)
 		if err != nil {
