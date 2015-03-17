@@ -3,10 +3,13 @@
 package main
 
 import (
+	"crypto/md5"
 	"database/sql"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"strconv"
 
 	_ "github.com/PuppyKhan/mysql"
 )
@@ -22,11 +25,19 @@ export MYSQL_TEST_CONCURRENT=1
 export MYSQL_TEST_PORT=3306
 */
 
+var (
+	NumTries int = 100
+	err      error
+)
+
 func main() {
-	Names := []string{
-		`Bob`,
-		`Cathy`,
+	if len(os.Args) > 1 {
+		NumTries, err = strconv.Atoi(os.Args[1])
+		if err != nil {
+			panic(err.Error())
+		}
 	}
+	rand.Seed(int64(NumTries))
 	TraceLog := log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
 	TraceLog.Println("Initializing")
 
@@ -63,6 +74,7 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
+	TraceLog.Println("Initializing table")
 	stmt, err := db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
@@ -73,16 +85,30 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
+	TraceLog.Println("Populating table")
 	stmt, err = db.Prepare("INSERT INTO people (name) VALUES (?);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
-	for _, name := range Names {
-		_, err = stmt.Exec(name)
+	for i := 0; i < NumTries; i++ {
+		someText := md5.Sum([]byte(strconv.Itoa(rand.Int())))
+		TraceLog.Printf("Inserting %s\n", someText)
+		_, err = stmt.Exec(someText)
 		if err != nil {
-			TraceLog.Fatal(err.Error())
+			TraceLog.Println(err.Error())
 		}
+	}
+
+	TraceLog.Println("Dropping table")
+	stmt, err = db.Prepare("DROP TABLE people;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
 	}
 
 	err = db.Close()
