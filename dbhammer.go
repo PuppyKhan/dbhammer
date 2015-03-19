@@ -123,6 +123,23 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
+	TraceLog.Println("Populating tags")
+	stmt, err = db.Prepare("INSERT INTO tagging (tag) VALUES (?);")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	for i := 0; i < NumTries; i++ {
+		someTag := Tags[i%len(Tags)]
+		TraceLog.Printf("Inserting tag: \"%s\"\n", someTag)
+		_, err = stmt.Exec(someTag)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+	}
+	if err = stmt.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
 	TraceLog.Println("Populating table")
 	var wg sync.WaitGroup
 	stmt, err = db.Prepare("INSERT INTO people (name, tag) VALUES (?,?);")
