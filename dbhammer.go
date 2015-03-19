@@ -107,8 +107,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -120,8 +119,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -136,8 +134,7 @@ func main() {
 		go InsertRow(stmt, i, &wg)
 	}
 	wg.Wait()
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -156,8 +153,7 @@ func main() {
 			TraceLog.Println(err.Error())
 		}
 		defer func() {
-			err = rows.Close()
-			if err != nil {
+			if err = rows.Close(); err != nil {
 				TraceLog.Fatal(err.Error())
 			}
 		}()
@@ -169,13 +165,37 @@ func main() {
 			}
 			TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
 		}
-		err = rows.Err()
-		if err != nil {
+		if err = rows.Err(); err != nil {
 			TraceLog.Fatal(err.Error())
 		}
 	}
-	err = stmt.Close()
+	if err = stmt.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	TraceLog.Println("Inefficient query all")
+	stmt, err = db.Prepare("SELECT name, tag FROM people WHERE tag IN (SELECT tag FROM tagging) LIMIT 0,?;")
 	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	rows, err := stmt.Query(NumTries)
+	if err != nil {
+		TraceLog.Println(err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&query_name, &query_tag)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
+	}
+	if err = rows.Err(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	if err = rows.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -190,8 +210,7 @@ func main() {
 		TraceLog.Println(err.Error())
 	}
 	TraceLog.Printf("Total row count: %d\n", query_count)
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -204,8 +223,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
@@ -217,13 +235,11 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	err = stmt.Close()
-	if err != nil {
+	if err = stmt.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
-	err = db.Close()
-	if err != nil {
+	if err = db.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 
