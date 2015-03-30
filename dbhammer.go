@@ -32,11 +32,11 @@ var (
 	// Tags     []string = []string{"tag #1", "tag #2", "tag #3"}
 )
 
-func InsertRow(stmt *sql.Stmt, i int, wg *sync.WaitGroup) {
+func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 	var err error
 	// just want a simple random string here, this onion has me crying...
 	someText := fmt.Sprintf("%x", md5.Sum([]byte(strconv.Itoa(rand.Int()))))
-	someTag := Tags[i%len(Tags)]
+	// someTag := Tags[i%len(Tags)]
 	TraceLog.Printf("Inserting %s, %s\n", someText, someTag)
 	_, err = stmt.Exec(someText, someTag)
 	if err != nil {
@@ -152,7 +152,7 @@ func main() {
 	}
 	for i := 0; i < NumTries; i++ {
 		wg.Add(1)
-		go InsertRow(stmt, i, &wg)
+		go InsertRow(stmt, Tags[i%len(Tags)], &wg)
 	}
 	wg.Wait()
 	if err = stmt.Close(); err != nil {
