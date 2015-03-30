@@ -29,7 +29,7 @@ export MYSQL_TEST_PORT=3306
 var (
 	NumTries int = 100
 	TraceLog *log.Logger
-	Tags     []string = []string{"tag #1", "tag #2", "tag #3"}
+	// Tags     []string = []string{"tag #1", "tag #2", "tag #3"}
 )
 
 func InsertRow(stmt *sql.Stmt, i int, wg *sync.WaitGroup) {
@@ -47,6 +47,10 @@ func InsertRow(stmt *sql.Stmt, i int, wg *sync.WaitGroup) {
 
 func main() {
 	var err error
+	// Tags := []string{"tag #1", "tag #2", "tag #3"}
+
+	var Tags []string = []string{"tag #1", "tag #2", "tag #3"}
+
 	if len(os.Args) > 1 {
 		NumTries, err = strconv.Atoi(os.Args[1])
 		if err != nil {
@@ -128,8 +132,8 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	for i := 0; i < NumTries; i++ {
-		someTag := Tags[i%len(Tags)]
+	for i := 0; i < len(Tags); i++ {
+		someTag := Tags[i]
 		TraceLog.Printf("Inserting tag: \"%s\"\n", someTag)
 		_, err = stmt.Exec(someTag)
 		if err != nil {
@@ -169,11 +173,11 @@ func main() {
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
-		defer func() {
-			if err = rows.Close(); err != nil {
-				TraceLog.Fatal(err.Error())
-			}
-		}()
+		// defer func() {
+		// 	if err = rows.Close(); err != nil {
+		// 		TraceLog.Fatal(err.Error())
+		// 	}
+		// }()
 
 		for rows.Next() {
 			err = rows.Scan(&query_name, &query_tag)
@@ -183,6 +187,9 @@ func main() {
 			TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
 		}
 		if err = rows.Err(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+		if err = rows.Close(); err != nil {
 			TraceLog.Fatal(err.Error())
 		}
 	}
