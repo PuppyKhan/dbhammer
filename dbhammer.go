@@ -129,6 +129,23 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
+	TraceLog.Println("Populating tags")
+	stmt, err = db.Prepare("INSERT INTO tagging (tag) VALUES (?);")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	for i := 0; i < len(Tags); i++ {
+		someTag := Tags[i]
+		TraceLog.Printf("Inserting tag: \"%s\"\n", someTag)
+		_, err = stmt.Exec(someTag)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+	}
+	if err = stmt.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
 	if *forceSqlError {
 		TraceLog.Println("Force Query() error")
 		stmt, err = db.Prepare("SELECT tag FROM tagging WHERE tag = ?;")
@@ -186,23 +203,6 @@ func main() {
 		if err = stmt.Close(); err != nil {
 			TraceLog.Fatal(err.Error())
 		}
-	}
-
-	TraceLog.Println("Populating tags")
-	stmt, err = db.Prepare("INSERT INTO tagging (tag) VALUES (?);")
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
-	for i := 0; i < len(Tags); i++ {
-		someTag := Tags[i]
-		TraceLog.Printf("Inserting tag: \"%s\"\n", someTag)
-		_, err = stmt.Exec(someTag)
-		if err != nil {
-			TraceLog.Println(err.Error())
-		}
-	}
-	if err = stmt.Close(); err != nil {
-		TraceLog.Fatal(err.Error())
 	}
 
 	TraceLog.Println("Populating table")
