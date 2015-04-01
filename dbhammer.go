@@ -54,7 +54,7 @@ func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func PrepareAll(db *sql.DB) {
+func PrepareCreates(db *sql.DB) {
 	var err error
 	CreateTag, err = db.Prepare("CREATE TABLE tagging (tag VARCHAR(50) PRIMARY KEY);")
 	if err != nil {
@@ -64,6 +64,10 @@ func PrepareAll(db *sql.DB) {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
+}
+
+func PrepareAll(db *sql.DB) {
+	var err error
 	InsertTag, err = db.Prepare("INSERT INTO tagging (tag) VALUES (?);")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
@@ -177,7 +181,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	PrepareAll(db)
+	PrepareCreates(db)
 
 	TraceLog.Println("Initializing tables")
 	_, err = CreateTag.Exec()
@@ -189,6 +193,9 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
+
+	TraceLog.Println("Preparing queries")
+	PrepareAll(db)
 
 	TraceLog.Println("Populating tags")
 	for i := 0; i < len(Tags); i++ {
