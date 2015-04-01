@@ -5,6 +5,7 @@ package main
 import (
 	"crypto/md5"
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -27,7 +28,7 @@ export MYSQL_TEST_PORT=3306
 */
 
 var (
-	NumTries int = 100
+	// NumTries int = 100
 	TraceLog *log.Logger
 	// Tags     []string = []string{"tag #1", "tag #2", "tag #3"}
 )
@@ -48,16 +49,16 @@ func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 func main() {
 	var err error
 	// Tags := []string{"tag #1", "tag #2", "tag #3"}
-
 	var Tags []string = []string{"tag #1", "tag #2", "tag #3"}
+	var query_name sql.NullString
+	var query_tag sql.NullString
 
-	if len(os.Args) > 1 {
-		NumTries, err = strconv.Atoi(os.Args[1])
-		if err != nil {
-			panic(err.Error())
-		}
-	}
-	rand.Seed(int64(NumTries))
+	conns := flag.Int("conns", 256, "Set # open/idle connections")
+	tries := flag.Int("tries", 100, "Set # rows to try")
+	forceSqlError := flag.Bool("error", false, "Test an error in SQL statement")
+	flag.Parse()
+
+	rand.Seed(int64(*tries))
 	TraceLog = log.New(os.Stdout, "DB Hammer: ", log.Ldate|log.Ltime|log.Lshortfile)
 	TraceLog.Println("Initializing")
 
@@ -86,7 +87,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	// db.SetMaxIdleConns(256)
+	db.SetMaxIdleConns(*conns)
+	db.SetMaxOpenConns(*conns)
 	TraceLog.Println("Pinging ... ")
 	err = db.Ping()
 	if err != nil {
@@ -127,6 +129,65 @@ func main() {
 		TraceLog.Fatal(err.Error())
 	}
 
+	if *forceSqlError {
+		TraceLog.Println("Force Query() error")
+		stmt, err = db.Prepare("SELECT tag FROM tagging WHERE tag = ?;")
+		if err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+
+		rows, err := stmt.Query(Tags[0], "error param")
+		if err != nil {
+			TraceLog.Println(err.Error())
+		} else {
+			for rows.Next() {
+				err = rows.Scan(&query_tag)
+				if err != nil {
+					TraceLog.Println(err.Error())
+				}
+				TraceLog.Printf("Returned row: %s\n", query_tag.String)
+			}
+			if err = rows.Err(); err != nil {
+				TraceLog.Printf(err.Error())
+			}
+			if err = rows.Close(); err != nil {
+				TraceLog.Fatal(err.Error())
+			}
+		}
+
+		if err = stmt.Close(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+
+		TraceLog.Println("Force Scan() error")
+		stmt, err = db.Prepare("SELECT tag FROM tagging WHERE tag = ?;")
+		if err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+
+		rows, err = stmt.Query(Tags[0])
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		for rows.Next() {
+			err = rows.Scan(&query_name, &query_tag)
+			if err != nil {
+				TraceLog.Println(err.Error())
+			}
+			// TraceLog.Printf("Returned row: %s, %s\n", query_name.String, query_tag.String)
+		}
+		if err = rows.Err(); err != nil {
+			TraceLog.Println(err.Error())
+		}
+		if err = rows.Close(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+
+		if err = stmt.Close(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+	}
+
 	TraceLog.Println("Populating tags")
 	stmt, err = db.Prepare("INSERT INTO tagging (tag) VALUES (?);")
 	if err != nil {
@@ -150,7 +211,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	for i := 0; i < NumTries; i++ {
+	for i := 0; i < *tries; i++ {
 		wg.Add(1)
 		go InsertRow(stmt, Tags[i%len(Tags)], &wg)
 	}
@@ -164,12 +225,10 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	var query_name sql.NullString
-	var query_tag sql.NullString
 	for i := 0; i < len(Tags); i++ {
 		someTag := Tags[i]
 		TraceLog.Printf("Reading %s...\n", Tags[i])
-		rows, err := stmt.Query(someTag, NumTries)
+		rows, err := stmt.Query(someTag, *tries)
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
@@ -202,7 +261,7 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	rows, err := stmt.Query(NumTries)
+	rows, err := stmt.Query(*tries)
 	if err != nil {
 		TraceLog.Println(err.Error())
 	}
