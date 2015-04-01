@@ -159,17 +159,16 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-
 	db.SetMaxIdleConns(*conns)
 	db.SetMaxOpenConns(*conns)
+
 	TraceLog.Println("Pinging ... ")
 	err = db.Ping()
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	PrepareAll(db)
 
-	TraceLog.Println("Initializing tables")
+	TraceLog.Println("Preparations")
 	_, err = db.Exec("DROP TABLE IF EXISTS people;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
@@ -178,7 +177,9 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
+	PrepareAll(db)
 
+	TraceLog.Println("Initializing tables")
 	_, err = CreateTag.Exec()
 	if err != nil {
 		TraceLog.Fatal(err.Error())
