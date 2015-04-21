@@ -171,6 +171,8 @@ func main() {
 			MYSQL_TEST_ADDR, MYSQL_TEST_PORT, MYSQL_TEST_DBNAME)
 	}
 
+	TraceLog.Println("Using", driverName)
+
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		panic(err.Error())
