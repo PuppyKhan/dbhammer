@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"sync"
 
+	_ "github.com/PuppyKhan/mymysql/godrv"
 	_ "github.com/PuppyKhan/mysql"
 )
 
@@ -129,10 +130,13 @@ func main() {
 	var Tags []string = []string{"tag #1", "tag #2", "tag #3"}
 	var query_name sql.NullString
 	var query_tag sql.NullString
+	var dsn string
+	var driverName string
 
 	conns := flag.Int("conns", 256, "Set # open/idle connections")
 	tries := flag.Int("tries", 100, "Set # rows to try")
 	forceSqlError := flag.Bool("error", false, "Test an error in SQL statement")
+	driver := flag.String("db", "mysql", "Select driver: mymysql or mysql")
 	flag.Parse()
 
 	rand.Seed(int64(*tries))
@@ -155,11 +159,19 @@ func main() {
 	MYSQL_TEST_DBNAME := env("MYSQL_TEST_DBNAME", "gotest")
 	// MYSQL_TEST_CONCURRENT:=env("MYSQL_TEST_CONCURRENT")
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s",
-		MYSQL_TEST_USER, MYSQL_TEST_PASS, MYSQL_TEST_PROT,
-		MYSQL_TEST_ADDR, MYSQL_TEST_PORT, MYSQL_TEST_DBNAME)
+	if *driver == "mymysql" {
+		driverName = "mymysql"
+		dsn = fmt.Sprintf("%s:%s:%s*%s/%s/%s",
+			MYSQL_TEST_PROT, MYSQL_TEST_ADDR, MYSQL_TEST_PORT,
+			MYSQL_TEST_DBNAME, MYSQL_TEST_USER, MYSQL_TEST_PASS)
+	} else {
+		driverName = "mysql" // default driver
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s",
+			MYSQL_TEST_USER, MYSQL_TEST_PASS, MYSQL_TEST_PROT,
+			MYSQL_TEST_ADDR, MYSQL_TEST_PORT, MYSQL_TEST_DBNAME)
+	}
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		panic(err.Error())
 	}
