@@ -44,11 +44,14 @@ var (
 	SPHello        *sql.Stmt
 )
 
-const storedProcHello = `DELIMITER //
-CREATE PROCEDURE ` + "`" + `hello` + "`" + ` ()
+const storedProcHello = `
+DELIMITER //
+
+CREATE PROCEDURE hello_world (OUT var1 VARCHAR(20))
 BEGIN
-    SELECT 'Hello, World!';
-END//`
+    SET var1 = 'Hello, World!';
+END//
+`
 
 func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 	var err error
@@ -105,7 +108,7 @@ func PrepareAll(db *sql.DB) {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	SPHello, err = db.Prepare("CALL hello;")
+	SPHello, err = db.Prepare("CALL hello_world;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -210,7 +213,7 @@ func main() {
 	}
 
 	TraceLog.Println("Preparations")
-	_, err = db.Exec("DROP PROCEDURE IF EXISTS hello;")
+	_, err = db.Exec("DROP PROCEDURE IF EXISTS hello_world;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -383,7 +386,7 @@ func main() {
 
 	// do later prepares her on out
 	TraceLog.Println("Dropping tables")
-	stmt, err := db.Prepare("DROP PROCEDURE hello;")
+	stmt, err := db.Prepare("DROP PROCEDURE hello_world;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
