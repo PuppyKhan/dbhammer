@@ -40,7 +40,15 @@ var (
 	SelectPeople   *sql.Stmt
 	SelectInSelect *sql.Stmt
 	SelectCount    *sql.Stmt
+	CreateSPHello  *sql.Stmt
+	SPHello        *sql.Stmt
 )
+
+const storedProcHello = `DELIMITER //
+CREATE PROCEDURE ` + "`" + `hello` + "`" + ` ()
+BEGIN
+    SELECT 'Hello, World!';
+END//`
 
 func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 	var err error
@@ -62,6 +70,10 @@ func PrepareCreates(db *sql.DB) {
 		TraceLog.Fatal(err.Error())
 	}
 	CreatePeople, err = db.Prepare("CREATE TABLE people (name VARCHAR(50) PRIMARY KEY, tag VARCHAR(50) NOT NULL, FOREIGN KEY (tag) REFERENCES tagging(tag));")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	CreateSPHello, err = db.Prepare(storedProcHello)
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -90,6 +102,10 @@ func PrepareAll(db *sql.DB) {
 		TraceLog.Fatal(err.Error())
 	}
 	SelectCount, err = db.Prepare("SELECT count(*) FROM people;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	SPHello, err = db.Prepare("CALL hello;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -122,6 +138,12 @@ func CloseAll(db *sql.DB) {
 	if err = SelectCount.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
+	if err = CreateSPHello.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	if err = SPHello.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
 }
 
 func main() {
@@ -136,6 +158,7 @@ func main() {
 	conns := flag.Int("conns", 256, "Set # open/idle connections")
 	tries := flag.Int("tries", 100, "Set # rows to try")
 	forceSqlError := flag.Bool("error", false, "Test an error in SQL statement")
+	useSP := flag.Bool("sp", false, "Test running stored procedure")
 	driver := flag.String("db", "mysql", "Select driver: mymysql or mysql")
 	flag.Parse()
 
@@ -187,6 +210,10 @@ func main() {
 	}
 
 	TraceLog.Println("Preparations")
+	_, err = db.Exec("DROP PROCEDURE IF EXISTS hello;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
 	_, err = db.Exec("DROP TABLE IF EXISTS people;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
@@ -202,8 +229,12 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-
 	_, err = CreatePeople.Exec()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	TraceLog.Println("Initializing stored procedure")
+	_, err = CreateSPHello.Exec()
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -218,6 +249,28 @@ func main() {
 		_, err = InsertTag.Exec(someTag)
 		if err != nil {
 			TraceLog.Println(err.Error())
+		}
+	}
+
+	if *useSP {
+		TraceLog.Println("Testing Stored Procedure")
+
+		rows, err := SPHello.Query()
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		for rows.Next() {
+			err = rows.Scan(&query_name)
+			if err != nil {
+				TraceLog.Println(err.Error())
+			}
+			TraceLog.Printf("Returned row: %s\n", query_name.String)
+		}
+		if err = rows.Err(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+		if err = rows.Close(); err != nil {
+			TraceLog.Fatal(err.Error())
 		}
 	}
 
@@ -330,7 +383,19 @@ func main() {
 
 	// do later prepares her on out
 	TraceLog.Println("Dropping tables")
-	stmt, err := db.Prepare("DROP TABLE people;")
+	stmt, err := db.Prepare("DROP PROCEDURE hello;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	if err = stmt.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+
+	stmt, err = db.Prepare("DROP TABLE people;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
