@@ -40,18 +40,15 @@ var (
 	SelectPeople   *sql.Stmt
 	SelectInSelect *sql.Stmt
 	SelectCount    *sql.Stmt
-	CreateSPHello  *sql.Stmt
 	SPHello        *sql.Stmt
+	// CreateSPHello  *sql.Stmt
 )
 
-const storedProcHello = `
-DELIMITER //
-
-CREATE PROCEDURE hello_world (OUT var1 VARCHAR(20))
-BEGIN
-    SET var1 = 'Hello, World!';
-END//
-`
+// const storedProcHello = `
+// DELIMITER //
+// CREATE PROCEDURE hello_world() BEGIN SELECT 'Hello, World!'; END//
+// DELIMITER ;
+// `
 
 func InsertRow(stmt *sql.Stmt, someTag string, wg *sync.WaitGroup) {
 	var err error
@@ -76,10 +73,10 @@ func PrepareCreates(db *sql.DB) {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	CreateSPHello, err = db.Prepare(storedProcHello)
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
+	// CreateSPHello, err = db.Prepare(storedProcHello)
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
 }
 
 func PrepareAll(db *sql.DB) {
@@ -141,9 +138,9 @@ func CloseAll(db *sql.DB) {
 	if err = SelectCount.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	if err = CreateSPHello.Close(); err != nil {
-		TraceLog.Fatal(err.Error())
-	}
+	// if err = CreateSPHello.Close(); err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
 	if err = SPHello.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
@@ -213,10 +210,10 @@ func main() {
 	}
 
 	TraceLog.Println("Preparations")
-	_, err = db.Exec("DROP PROCEDURE IF EXISTS hello_world;")
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
+	// _, err = db.Exec("DROP PROCEDURE IF EXISTS hello_world;")
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
 	_, err = db.Exec("DROP TABLE IF EXISTS people;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
@@ -236,11 +233,11 @@ func main() {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
-	TraceLog.Println("Initializing stored procedure")
-	_, err = CreateSPHello.Exec()
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
+	// TraceLog.Println("Initializing stored procedure")
+	// _, err = CreateSPHello.Exec()
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
 
 	TraceLog.Println("Preparing queries")
 	PrepareAll(db)
