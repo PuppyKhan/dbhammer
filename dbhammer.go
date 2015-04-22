@@ -383,19 +383,21 @@ func main() {
 
 	// do later prepares her on out
 	TraceLog.Println("Dropping tables")
-	stmt, err := db.Prepare("DROP PROCEDURE hello_world;")
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
-	_, err = stmt.Exec()
-	if err != nil {
-		TraceLog.Fatal(err.Error())
-	}
-	if err = stmt.Close(); err != nil {
-		TraceLog.Fatal(err.Error())
-	}
 
-	stmt, err = db.Prepare("DROP TABLE people;")
+	// Received #1295 error from MySQL server: "This command is not supported in the prepared statement protocol yet"
+	// stmt, err := db.Prepare("DROP PROCEDURE hello_world;")
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
+	// _, err = stmt.Exec()
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
+	// if err = stmt.Close(); err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
+
+	stmt, err := db.Prepare("DROP TABLE people;")
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
