@@ -41,6 +41,7 @@ var (
 	SelectInSelect *sql.Stmt
 	SelectCount    *sql.Stmt
 	SPHello        *sql.Stmt
+	SPBye          *sql.Stmt
 	// CreateSPHello  *sql.Stmt
 )
 
@@ -109,6 +110,10 @@ func PrepareAll(db *sql.DB) {
 	if err != nil {
 		TraceLog.Fatal(err.Error())
 	}
+	SPBye, err = db.Prepare("CALL good_bye;")
+	if err != nil {
+		TraceLog.Fatal(err.Error())
+	}
 
 }
 
@@ -142,6 +147,9 @@ func CloseAll(db *sql.DB) {
 	// 	TraceLog.Fatal(err.Error())
 	// }
 	if err = SPHello.Close(); err != nil {
+		TraceLog.Fatal(err.Error())
+	}
+	if err = SPBye.Close(); err != nil {
 		TraceLog.Fatal(err.Error())
 	}
 }
@@ -275,11 +283,30 @@ func main() {
 		}
 
 		TraceLog.Println("Prepared Stored Procedure QueryRow")
-		err = SPHello.QueryRow("CALL hello_world;").Scan(&query_name)
+		err = SPHello.QueryRow().Scan(&query_name)
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
 		TraceLog.Printf("Returned row: %s\n", query_name.String)
+
+		TraceLog.Println("Not prepared Stored Procedure Query")
+		rows, err = db.Query("CALL hello_world;")
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		for rows.Next() {
+			err = rows.Scan(&query_name)
+			if err != nil {
+				TraceLog.Println(err.Error())
+			}
+			TraceLog.Printf("Returned row: %s\n", query_name.String)
+		}
+		if err = rows.Err(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
+		if err = rows.Close(); err != nil {
+			TraceLog.Fatal(err.Error())
+		}
 
 		TraceLog.Println("Not prepared Stored Procedure QueryRow")
 		err = db.QueryRow("CALL hello_world;").Scan(&query_name)
@@ -287,6 +314,18 @@ func main() {
 			TraceLog.Println(err.Error())
 		}
 		TraceLog.Printf("Returned row: %s\n", query_name.String)
+
+		TraceLog.Println("Prepared Stored Procedure Exec")
+		_, err = SPBye.Exec()
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+
+		TraceLog.Println("Not prepared Stored Procedure Exec")
+		_, err = db.Exec("CALL good_bye;")
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
 	}
 
 	if *forceSqlError {

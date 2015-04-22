@@ -19,11 +19,17 @@ export MYSQL_TEST_PORT=3306
 ```
 
 ## Stored Procedure test
-The test db requires this to be manual setup in order to use the -sp flag.
+The test db requires these Stored Procedures to be manual setup in order to use the -sp flag.
 
 ```
 DELIMITER //
 CREATE PROCEDURE hello_world() BEGIN SELECT 'Hello, World!'; END//
+DELIMITER ;
+```
+
+```
+DELIMITER //
+CREATE PROCEDURE good_bye() BEGIN DECLARE something INT DEFAULT 0; SET something=2; END//
 DELIMITER ;
 ```
 
