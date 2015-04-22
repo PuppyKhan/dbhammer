@@ -255,6 +255,7 @@ func main() {
 	if *useSP {
 		TraceLog.Println("Testing Stored Procedure")
 
+		TraceLog.Println("Prepared Stored Procedure Query")
 		rows, err := SPHello.Query()
 		if err != nil {
 			TraceLog.Println(err.Error())
@@ -272,6 +273,20 @@ func main() {
 		if err = rows.Close(); err != nil {
 			TraceLog.Fatal(err.Error())
 		}
+
+		TraceLog.Println("Prepared Stored Procedure QueryRow")
+		err = SPHello.QueryRow("CALL hello_world;").Scan(&query_name)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		TraceLog.Printf("Returned row: %s\n", query_name.String)
+
+		TraceLog.Println("Not prepared Stored Procedure QueryRow")
+		err = db.QueryRow("CALL hello_world;").Scan(&query_name)
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+		TraceLog.Printf("Returned row: %s\n", query_name.String)
 	}
 
 	if *forceSqlError {
@@ -384,18 +399,13 @@ func main() {
 	// do later prepares her on out
 	TraceLog.Println("Dropping tables")
 
+	// _, err = db.Exec("DROP PROCEDURE IF EXISTS hello_world;")
+	// if err != nil {
+	// 	TraceLog.Fatal(err.Error())
+	// }
+
 	// Received #1295 error from MySQL server: "This command is not supported in the prepared statement protocol yet"
 	// stmt, err := db.Prepare("DROP PROCEDURE hello_world;")
-	// if err != nil {
-	// 	TraceLog.Fatal(err.Error())
-	// }
-	// _, err = stmt.Exec()
-	// if err != nil {
-	// 	TraceLog.Fatal(err.Error())
-	// }
-	// if err = stmt.Close(); err != nil {
-	// 	TraceLog.Fatal(err.Error())
-	// }
 
 	stmt, err := db.Prepare("DROP TABLE people;")
 	if err != nil {
