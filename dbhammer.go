@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"sync"
 
-	_ "github.com/PuppyKhan/mymysql/godrv"
 	_ "github.com/PuppyKhan/mysql"
 )
 
@@ -327,11 +326,14 @@ func main() {
 			TraceLog.Println(err.Error())
 		}
 
-		TraceLog.Println("Not prepared multi statement Stored Procedure Exec")
-		_, err = db.Exec("CALL good_bye; CALL good_bye;")
-		if err != nil {
-			TraceLog.Println(err.Error())
-		}
+		// TraceLog.Println("Not prepared multi statement Stored Procedure Exec")
+		// _, err = db.Exec("CALL good_bye; CALL good_bye;")
+		// if err != nil {
+		// 	TraceLog.Println(err.Error())
+		// }
+		// // if res != nil {
+		// // 	godrv.EndAll(res)
+		// // }
 	}
 
 	if *forceSqlError {
