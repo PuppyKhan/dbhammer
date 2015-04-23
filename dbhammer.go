@@ -326,6 +326,12 @@ func main() {
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
+
+		TraceLog.Println("Not prepared multi statement Stored Procedure Exec")
+		_, err = db.Exec("CALL good_bye; CALL good_bye;")
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
 	}
 
 	if *forceSqlError {
