@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"sync"
 
+	_ "github.com/PuppyKhan/mymysql/godrv"
 	_ "github.com/PuppyKhan/mysql"
 )
 
