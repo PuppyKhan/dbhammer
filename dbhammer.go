@@ -263,8 +263,20 @@ func main() {
 	if *useSP {
 		TraceLog.Println("Testing Stored Procedure")
 
+		TraceLog.Println("Prepared Stored Procedure Exec")
+		_, err := SPBye.Exec()
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+
+		TraceLog.Println("Not prepared Stored Procedure Exec")
+		_, err = db.Exec("CALL good_bye;")
+		if err != nil {
+			TraceLog.Println(err.Error())
+		}
+
 		TraceLog.Println("Prepared Stored Procedure QueryRow")
-		err := SPHello.QueryRow().Scan(&query_name)
+		err = SPHello.QueryRow().Scan(&query_name)
 		if err != nil {
 			TraceLog.Println(err.Error())
 		}
@@ -314,18 +326,6 @@ func main() {
 			TraceLog.Println(err.Error())
 		}
 		TraceLog.Printf("Returned row: %s\n", query_name.String)
-
-		TraceLog.Println("Prepared Stored Procedure Exec")
-		_, err = SPBye.Exec()
-		if err != nil {
-			TraceLog.Println(err.Error())
-		}
-
-		TraceLog.Println("Not prepared Stored Procedure Exec")
-		_, err = db.Exec("CALL good_bye;")
-		if err != nil {
-			TraceLog.Println(err.Error())
-		}
 	}
 
 	if *forceSqlError {
