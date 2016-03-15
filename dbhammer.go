@@ -13,8 +13,10 @@ import (
 	"strconv"
 	"sync"
 
-	_ "github.com/PuppyKhan/mymysql/godrv"
-	_ "github.com/PuppyKhan/mysql"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/ziutek/mymysql/godrv"
+	// _ "github.com/PuppyKhan/mymysql/godrv"
+	// _ "github.com/PuppyKhan/mysql"
 )
 
 /*
@@ -197,7 +199,9 @@ func main() {
 			MYSQL_TEST_DBNAME, MYSQL_TEST_USER, MYSQL_TEST_PASS)
 	} else {
 		driverName = "mysql" // default driver
-		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s",
+		// multiStatements support for Stored Procedures added
+		//  in: https://github.com/go-sql-driver/mysql/pull/411
+		dsn = fmt.Sprintf("%s:%s@%s(%s:%s)/%s?multiStatements=true",
 			MYSQL_TEST_USER, MYSQL_TEST_PASS, MYSQL_TEST_PROT,
 			MYSQL_TEST_ADDR, MYSQL_TEST_PORT, MYSQL_TEST_DBNAME)
 	}

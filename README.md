@@ -37,6 +37,14 @@ DELIMITER ;
 This utility makes use of all the following imports to build. The specific MySQL driver gets chosen at runtime.
 
 ```
+go get -u github.com/ziutek/mymysql/mysql
+go get -u github.com/ziutek/mymysql/native
+go get -u github.com/ziutek/mymysql/godrv
+go get -u github.com/go-sql-driver/mysql
+```
+
+No longer uses forked drivers:
+```
 go get -u github.com/PuppyKhan/mymysql/mysql
 go get -u github.com/PuppyKhan/mymysql/native
 go get -u github.com/PuppyKhan/mymysql/godrv
@@ -58,3 +66,5 @@ Usage of dbhammer:
 `dbhammer -db=mysql -conns=1 -sp`
 
 This uses the "github.com/PuppyKhan/mysql" driver, only allows 1 open or idle connection, and tests stored procedures.
+
+Note that setting "-conns=1" is useful for surfacing resource leaks in the buffer.
